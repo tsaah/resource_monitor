@@ -8,7 +8,7 @@ Window {
     id: root
     visible: true
     width: 1200
-    height: Math.max(ResourceMonitor.statistics.disk.disksOrder.length * 70 + 25, 250)
+    height: ResourceMonitor.statistics.disk.disksOrder.length * 70 + 25
     title: 'Resource monitor'
 
     RowLayout {
