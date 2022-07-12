@@ -15,10 +15,14 @@ qt_add_qml_module(resource_monitor
         statisticsreader.h statisticsreader.cpp
         statistics.h
     QML_FILES
-        CpuWidget.qml
-        ProcessWidget.qml
-        MemoryWidget.qml
-        DiskWidget.qml
+        MyTaskQml/CpuView.qml
+        MyTaskQml/CpuBar.qml
+        MyTaskQml/ProcessView.qml
+        MyTaskQml/MemoryView.qml
+        MyTaskQml/MemoryBar.qml
+        MyTaskQml/DisksView.qml
+        MyTaskQml/DiskView.qml
+        MyTaskQml/Common.js
 )
 
 target_link_libraries(resource_monitor

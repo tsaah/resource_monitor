@@ -1,8 +1,10 @@
 #pragma once
 
+#include "statistics.h"
+
 #include <QObject>
 #include <QDir>
-#include "statistics.h"
+#include <QMutex>
 
 class StaticsticsReader: public QObject {
     Q_OBJECT
@@ -23,7 +25,6 @@ private:
     void collectDiskInfoTotalAvailableUsed(DiskStats& disks);
 
     bool initialized_{ false };
-    bool busy_{ false };
     QDir procDir_;
     Statistics currentStatistics_;
     qint64 oldTotals_;
@@ -31,4 +32,5 @@ private:
     QVector<qint64> coreOldTotals_;
     QVector<qint64> coreOldIdles_;
     QVector<QString> lastFound_;
+    mutable QMutex mutex_;
 };

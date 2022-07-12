@@ -4,29 +4,36 @@
 #include <QElapsedTimer>
 #include <QVariant>
 
+#include <filesystem>
+
 #include <sys/statvfs.h>
 #include <unistd.h>
 
+
+#define BEGIN_TIMED_RUN qDebug() << "======== BEGIN TIMED RUN ========"; static QElapsedTimer ELAPSED_TIMER; ELAPSED_TIMER.start()
+#define MEASURE_TIMED_RUN(message) qDebug() << message << "elapsed:" << QString::number(ELAPSED_TIMER.nsecsElapsed() / 1e6f, 'f', 3) << "ms"; ELAPSED_TIMER.start()
+
 namespace {
 
-QElapsedTimer ELAPSED_TIMER;
+const int THREADS_INDEX = 19;
 
 } // namespace
 
 void StaticsticsReader::initialize() {
-    if (initialized_) { return; }
+    if (Q_UNLIKELY(initialized_)) { return; }
 
     procDir_ = QDir(QStringLiteral("/proc"));
-    if (!procDir_.exists() || !procDir_.isReadable()) {
+    if (Q_UNLIKELY(!procDir_.exists() || !procDir_.isReadable())) {
         qFatal("no /proc filesystem or it is not readable");
     }
 
-    const auto coreCount = sysconf(_SC_NPROCESSORS_ONLN);
-    if (coreCount < 1) {
+    auto coreCount = sysconf(_SC_NPROCESSORS_ONLN);
+    if (Q_UNLIKELY(coreCount < 1)) {
+        coreCount = 1;
         qWarning() << "Could not determine number of cores, defaulting to 1.";
     }
-    currentStatistics_.cpu_.coreCount_ = coreCount < 1 ? 1 : coreCount;
 
+    currentStatistics_.cpu_.coreCount_ = coreCount;
     currentStatistics_.cpu_.coreLoad_.resize(coreCount);
     coreOldTotals_.resize(coreCount);
     coreOldIdles_.resize(coreCount);
@@ -35,39 +42,37 @@ void StaticsticsReader::initialize() {
 }
 
 void StaticsticsReader::collect() {
-    ELAPSED_TIMER.restart();
-    if (!initialized_) { initialize(); }
-    if (!busy_) {
-        busy_ = true;
+    if (Q_UNLIKELY(!initialized_)) { initialize(); }
+    static bool busy{ false };
+    if (Q_LIKELY(!busy)) {
+        busy = true;
         auto newStatistics = currentStatistics_;
-        qDebug() << "init() elapsed:" << ELAPSED_TIMER.restart() << "ns";
         collectCpuLoad(newStatistics.cpu_);
-        qDebug() << "collectCpuLoad() elapsed:" << ELAPSED_TIMER.restart() << "ns";
         collectNumberOfThreadsAndProcesses(newStatistics.process_);
-        qDebug() << "collectNumberOfThreadsAndProcesses() elapsed:" << ELAPSED_TIMER.restart() << "ns";
         collectAvailableMemoryAndMemoryUsed(newStatistics.memory_);
-        qDebug() << "collectAvailableMemoryAndMemoryUsed() elapsed:" << ELAPSED_TIMER.restart() << "ns";
         collectDiskInfoTotalAvailableUsed(newStatistics.disk_);
-        qDebug() << "collectDiskInfoTotalAvailableUsed() elapsed:" << ELAPSED_TIMER.restart() << "ns";
-        currentStatistics_ = std::move(newStatistics);
-        busy_ = false;
+        {
+            QMutexLocker locker(&mutex_);
+            currentStatistics_ = std::move(newStatistics);
+        }
+        busy = false;
         emit collectFinished();
     }
-    qDebug() << "collectFinished() elapsed:" << ELAPSED_TIMER.restart() << "ns";
 }
 
 Statistics StaticsticsReader::currentStatistics() const {
+    QMutexLocker locker(&mutex_);
     return currentStatistics_;
 }
 
 void StaticsticsReader::collectCpuLoad(CpuStats& cpu) {
     QFile stat(procDir_.absolutePath() + "/stat");
-    if (stat.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (Q_LIKELY(stat.open(QIODevice::ReadOnly | QIODevice::Text))) {
         QTextStream stream(&stat);
         for (int i = 0;; i++) {
             QString entry;
             stream >> entry;
-            if (entry.left(3) != "cpu") { break; }
+            if (Q_UNLIKELY(entry.left(3) != "cpu")) { break; }
             stream.skipWhiteSpace();
 
             QVector<qint64> times;
@@ -77,7 +82,7 @@ void StaticsticsReader::collectCpuLoad(CpuStats& cpu) {
             for (;;) {
                 quint64 value = 0;
                 stream >> value;
-                if (value > 0 || stream.status() == QTextStream::Ok) {
+                if (Q_LIKELY(value > 0 || stream.status() == QTextStream::Ok)) {
                     times.append(value);
                     totalSum += value;
                 } else {
@@ -86,7 +91,7 @@ void StaticsticsReader::collectCpuLoad(CpuStats& cpu) {
                 }
             }
 
-            if (times.size() < 4) {
+            if (Q_UNLIKELY(times.size() < 4)) {
                 qFatal("Unexpected /proc/stat structure");
             }
 
@@ -105,7 +110,7 @@ void StaticsticsReader::collectCpuLoad(CpuStats& cpu) {
 
                 cpu.load_ = std::clamp(static_cast<qreal>(calcTotals - calcIdles) / static_cast<qreal>(calcTotals), 0.0, 1.0);
             } else { // Calculate cpu total for each core
-                if (i > cpu.coreCount_) break;
+                if (i > cpu.coreCount_) { break; }
                 const qint64 calcTotals = std::max(0ll, totals - coreOldTotals_.at(i - 1));
                 const qint64 calcIdles = std::max(0ll, idles - coreOldIdles_.at(i - 1));
                 coreOldTotals_[i - 1] = totals;
@@ -114,7 +119,6 @@ void StaticsticsReader::collectCpuLoad(CpuStats& cpu) {
                 cpu.coreLoad_[i - 1] = std::clamp(static_cast<qreal>(calcTotals - calcIdles) / static_cast<qreal>(calcTotals), 0.0, 1.0);
             }
         }
-
         stat.close();
     }
 }
@@ -125,7 +129,7 @@ void StaticsticsReader::collectAvailableMemoryAndMemoryUsed(MemoryStats& memory)
 
     // Read memory info from /proc/meminfo
     QFile meminfo(procDir_.absolutePath() + "/meminfo");
-    if (meminfo.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (Q_LIKELY(meminfo.open(QIODevice::ReadOnly | QIODevice::Text))) {
         QTextStream stream(&meminfo);
         bool hasAvailableMemory = false;
         for (;;) {
@@ -156,11 +160,11 @@ void StaticsticsReader::collectAvailableMemoryAndMemoryUsed(MemoryStats& memory)
             }
             stream.readLine();
         }
-        if (!hasAvailableMemory) {
+        if (Q_UNLIKELY(!hasAvailableMemory)) {
             memory.memoryAvailable_ = memory.memoryFree_ + memory.memoryCached_;
         }
         memory.memoryUsed_ = memory.memoryTotal_ - memory.memoryAvailable_;
-        if (memory.swapTotal_ > 0) {
+        if (Q_LIKELY(memory.swapTotal_ > 0)) {
             memory.swapUsed_ = memory.swapTotal_ - memory.swapFree_;
         }
         meminfo.close();
@@ -177,18 +181,16 @@ void StaticsticsReader::collectNumberOfThreadsAndProcesses(ProcessStats& process
         const auto pidString = subdir.fileName();
         bool isANumber = false;
         pidString.toULongLong(&isANumber);
-        if (!isANumber) { continue; }
         ++processCount;
         QFile pidstat(subdir.absoluteFilePath() + "/stat");
-        if (pidstat.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            const auto threads = pidstat.readAll().split(' ')[19];
+        if (Q_LIKELY(pidstat.open(QIODevice::ReadOnly | QIODevice::Text))) {
+            const auto threads = pidstat.readAll().split(' ')[THREADS_INDEX];
             threadCount += threads.toULongLong();
         }
     }
     process.processCount_ = processCount;
     process.threadCount_ = threadCount;
 }
-
 
 void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
     auto& diskInfos = disks.infos_;
@@ -197,10 +199,10 @@ void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
     QSet<QString> skipSet = { "nodev", "squashfs", "nullfs" };
     QSet<QString> fstypes = { "zfs", "wslfs", "drvfs" };
     QFile filesystems(procDir_.absolutePath() + "/filesystems");
-    if (filesystems.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (Q_LIKELY(filesystems.open(QIODevice::ReadOnly | QIODevice::Text))) {
         const auto filesystemsList = filesystems.readAll().trimmed().split('\n');
         for (const auto& line: filesystemsList) {
-            const auto fsInfo = line.trimmed().split(' ');
+            const auto fsInfo = line.trimmed().split('\t');
             QString fstype = fsInfo.last();
             if (!skipSet.contains(fstype) && !skipSet.contains(fsInfo.first())) {
                 fstypes.insert(fstype);
@@ -211,16 +213,17 @@ void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
         qFatal("Failed to read /proc/filesystems");
     }
 
-    //? Get mounts from /etc/mtab or /proc/self/mounts
+    // Get mounts from /etc/mtab or /proc/self/mounts
     const QDir mtabPath("/etc/mtab");
     const QDir selfmountsPath(procDir_.absolutePath() + "/self/mounts");
     const QString mountsPath = mtabPath.exists() ? mtabPath.absolutePath() : selfmountsPath.absolutePath();
     QFile mounts(mountsPath);
-    if (mounts.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (Q_LIKELY(mounts.open(QIODevice::ReadOnly | QIODevice::Text))) {
         const auto mountsContents = mounts.readAll();
         QVector<QString> found;
         found.reserve(lastFound_.size());
-        QString mountpoint, fstype;
+        QByteArray mountpoint, fstype;
+
         const auto lines = mountsContents.trimmed().split('\n');
         for (const auto& line: lines) {
             const auto data = line.split(' ');
@@ -234,7 +237,6 @@ void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
             if (fstypes.contains(fstype)) {
                 found.append(mountpoint);
 
-                //? Save mountpoint, name, fstype, dev path and path to /sys/block stat file
                 if (!disks.infos_.contains(mountpoint)) {
                     DiskInfo diskInfo{ mountpoint.split('/').last() };
                     if (diskInfo.name_.isEmpty()) {
@@ -244,7 +246,7 @@ void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
                 }
             }
         }
-        //? Remove diskInfos no longer mounted or filtered out
+        // remove diskInfos no longer mounted
         for (auto i = diskInfos.constBegin(); i != diskInfos.constEnd();) {
             if (!found.contains(i.key())) {
                 i = diskInfos.erase(i);
@@ -262,10 +264,10 @@ void StaticsticsReader::collectDiskInfoTotalAvailableUsed(DiskStats &disks) {
     for (auto i = diskInfos.begin(); i != diskInfos.end(); ++i) {
         const auto& mountpoint = i.key();
         QDir mountpointDir(mountpoint);
-        if (!mountpointDir.exists()) { continue; }
+        if (Q_UNLIKELY(!mountpointDir.exists())) { continue; }
 
         struct statvfs64 vfs;
-        if (statvfs64(mountpoint.toStdString().c_str(), &vfs) < 0) {
+        if (Q_UNLIKELY(statvfs64(mountpoint.toStdString().c_str(), &vfs) < 0)) {
             qWarning() << "Failed to get disk/partition stats with statvfs() for: " <<  mountpoint;
             continue;
         }

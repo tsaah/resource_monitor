@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QMap>
 #include <QDir>
+#include <QtQml/qqmlregistration.h>
 
 struct CpuStats {
     Q_GADGET

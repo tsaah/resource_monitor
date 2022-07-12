@@ -1,6 +1,8 @@
 #include "resourcemonitor.h"
 #include "statisticsreader.h"
 
+const int ResourceMonitor::DEFAULT_INTERVAL_MS = 100;
+
 ResourceMonitor::ResourceMonitor(QObject* parent)
     : QObject{ parent }
 {
@@ -12,7 +14,8 @@ ResourceMonitor::ResourceMonitor(QObject* parent)
     connect(statisticsReader_, &StaticsticsReader::collectFinished, this, &ResourceMonitor::statisticsChanged);
     workerThread_.start();
 
-    startTimer(100);
+    connect(this, &ResourceMonitor::intervalMsChanged, this, &ResourceMonitor::onIntervalChanged, Qt::DirectConnection);
+    setIntervalMs(DEFAULT_INTERVAL_MS);
 }
 
 ResourceMonitor::~ResourceMonitor() {
@@ -24,6 +27,23 @@ Statistics ResourceMonitor::statistics() const {
     return statisticsReader_->currentStatistics();
 }
 
-void ResourceMonitor::timerEvent(QTimerEvent *event) {
+void ResourceMonitor::timerEvent(QTimerEvent*) {
     emit startStatisticsUpdate();
+}
+
+void ResourceMonitor::onIntervalChanged() {
+    if (Q_LIKELY(timerId_ != 0)) {
+        killTimer(timerId_);
+    }
+    timerId_ = startTimer(intervalMs_);
+}
+
+int ResourceMonitor::intervalMs() const {
+    return intervalMs_;
+}
+
+void ResourceMonitor::setIntervalMs(int newIntervalMs) {
+    if (intervalMs_ == newIntervalMs) { return; }
+    intervalMs_ = newIntervalMs;
+    emit intervalMsChanged();
 }

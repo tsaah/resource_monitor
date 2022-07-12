@@ -10,6 +10,7 @@ class StaticsticsReader;
 
 class ResourceMonitor: public QObject {
     Q_OBJECT
+    Q_PROPERTY(int intervalMs READ intervalMs WRITE setIntervalMs NOTIFY intervalMsChanged)
     Q_PROPERTY(Statistics statistics READ statistics NOTIFY statisticsChanged)
     QML_ELEMENT
     QML_SINGLETON
@@ -18,15 +19,24 @@ public:
     ~ResourceMonitor();
 
     Statistics statistics() const;
+    int intervalMs() const;
+    void setIntervalMs(int newIntervalMs);
 
 protected:
-    void timerEvent(QTimerEvent* event);
+    void timerEvent(QTimerEvent*);
 
 signals:
     void startStatisticsUpdate();
     void statisticsChanged();
+    void intervalMsChanged();
+
+private slots:
+    void onIntervalChanged();
 
 private:
+    static const int DEFAULT_INTERVAL_MS;
     QThread workerThread_;
     StaticsticsReader* statisticsReader_{ nullptr };
+    int intervalMs_{ 0 };
+    int timerId_{ 0 };
 };
