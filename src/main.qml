@@ -1,9 +1,9 @@
-import QtQuick 2.15
-import QtQuick.Window 2.15
-import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
-import QtQuick.Controls.Material 2.15
-import my.rimac.task 1.0
+import QtQuick
+import QtQuick.Window
+import QtQuick.Layouts
+import QtQuick.Controls
+import QtQuick.Controls.Material
+import my.rimac.task
 
 Window {
     id: root

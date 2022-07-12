@@ -1,9 +1,9 @@
-import QtQuick 2.15
-import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
-import QtQuick.Controls.Material 2.15
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import QtQuick.Controls.Material
 import 'Common.js' as Common
-import my.rimac.task 1.0
+import my.rimac.task
 
 Pane {
     id: root
