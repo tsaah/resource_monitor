@@ -11,7 +11,6 @@ Pane {
     Layout.minimumWidth: 130
 
     readonly property string title: 'Process info'
-    readonly property var process: ResourceMonitor.statistics.process
 
     ColumnLayout {
         anchors.left:  parent.left
@@ -23,10 +22,10 @@ Pane {
         ColumnLayout {
             spacing: 0
             Label {
-                text: 'Process count: ' + root.process.processCount
+                text: 'Process count: ' + Process.processCount
             }
             Label {
-                text: 'Thread count: ' + root.process.threadCount
+                text: 'Thread count: ' + Process.threadCount
             }
         }
     }

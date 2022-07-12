@@ -13,7 +13,6 @@ Pane {
     Layout.fillHeight: true
 
     readonly property string title: 'Disk usage'
-    readonly property var disk: ResourceMonitor.statistics.disk
 
     ColumnLayout {
         anchors.left:  parent.left
@@ -25,9 +24,9 @@ Pane {
         ColumnLayout {
             spacing: 5
             Repeater {
-                model: root.disk.disksOrder
+                model: Disks.order
                 DiskView {
-                    disk: root.disk.infos[modelData]
+                    disk: Disks.infos[modelData]
                 }
             }
         }
