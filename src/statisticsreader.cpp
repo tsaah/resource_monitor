@@ -9,10 +9,6 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 
-
-#define BEGIN_TIMED_RUN qDebug() << "======== BEGIN TIMED RUN ========"; static QElapsedTimer ELAPSED_TIMER; ELAPSED_TIMER.start()
-#define MEASURE_TIMED_RUN(message) qDebug() << message << "elapsed:" << QString::number(ELAPSED_TIMER.nsecsElapsed() / 1e6f, 'f', 3) << "ms"; ELAPSED_TIMER.start()
-
 namespace {
 
 const int THREADS_INDEX = 19;
