@@ -26,5 +26,5 @@ qt_add_qml_module(resource_monitor
 )
 
 target_link_libraries(resource_monitor
-    PRIVATE Qt6::Gui Qt6::Quick Qt6::Charts Qt6::Qml
+    PRIVATE Qt6::Gui Qt6::Quick
 )
