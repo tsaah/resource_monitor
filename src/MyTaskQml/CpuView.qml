@@ -13,25 +13,9 @@ Pane {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    readonly property string title: 'Cpu load'
+    readonly property string title: 'CPU load'
     readonly property var cpu: ResourceMonitor.statistics.cpu
     readonly property var coreLoad: cpu.coreLoad
-
-    onCoreLoadChanged: {
-        if (coreLoadModel.count === 0) {
-            root.coreLoad.forEach((e, i) => {
-                coreLoadModel.append({ 'load': e });
-            })
-        } else {
-            root.coreLoad.forEach((e, i) => {
-                coreLoadModel.setProperty(i, 'load', e);
-            })
-        }
-    }
-
-    ListModel {
-        id: coreLoadModel
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -51,11 +35,11 @@ Pane {
                     spacing: 5
                     opacity: 0.7
                     Repeater {
-                        model: coreLoadModel
+                        model: root.cpu.coreCount
                         CpuBar {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            value: load
+                            value: root.coreLoad[index]
                             color: Qt.lighter(Common.barFG)
                         }
                     }

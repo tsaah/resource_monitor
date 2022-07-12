@@ -12,7 +12,6 @@ function stringifyPercent(value, totalValue) {
     return (100 * value / totalValue).toFixed(0) + '%';
 }
 
-
 var firstWidth = 45
 var secondWidth = 35
 var rightWidth = 70
@@ -21,4 +20,4 @@ var labelHeight = 16
 var barBG = '#53585e'
 var barFG = '#68a176'
 var diskPaneBG = '#3C3F43'
-var animationDuration = 500
+var animationDuration = 300
