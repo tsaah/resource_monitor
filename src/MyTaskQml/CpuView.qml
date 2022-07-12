@@ -14,8 +14,6 @@ Pane {
     Layout.fillHeight: true
 
     readonly property string title: 'CPU load'
-    readonly property var cpu: ResourceMonitor.statistics.cpu
-    readonly property var coreLoad: cpu.coreLoad
 
     ColumnLayout {
         anchors.fill: parent
@@ -29,24 +27,24 @@ Pane {
             color: Common.barBG
             CpuBar {
                 anchors.fill: parent
-                value: root.cpu.load
+                value: Cpu.load
                 RowLayout {
                     anchors.fill: parent
                     spacing: 5
                     opacity: 0.7
                     Repeater {
-                        model: root.cpu.coreCount
+                        model: Cpu.coreCount
                         CpuBar {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            value: root.coreLoad[index]
+                            value: Cpu.coreLoad[index]
                             color: Qt.lighter(Common.barFG)
                         }
                     }
                 }
                 Label {
                     anchors.centerIn: parent
-                    text: (100 * cpu.load).toFixed(0) + '%'
+                    text: (100 * Cpu.load).toFixed(0) + '%'
                     font.pixelSize: Math.min(parent.width * 0.3, parent.height * 0.3)
                 }
             }

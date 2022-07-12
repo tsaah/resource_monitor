@@ -11,9 +11,16 @@ qt_add_qml_module(resource_monitor
     URI my.rimac.task
     VERSION 1.0
     SOURCES
-        resourcemonitor.h resourcemonitor.cpp
-        statisticsreader.h statisticsreader.cpp
-        statistics.h
+        istatisticscollector.h
+        statisticsbase.h statisticsbase.cpp
+        cpustatistics.h cpustatistics.cpp
+        cpustatisticscollector.h cpustatisticscollector.cpp
+        processstatistics.h processstatistics.cpp
+        processstatisticscollector.h processstatisticscollector.cpp
+        memorystatistics.h memorystatistics.cpp
+        memorystatisticscollector.h memorystatisticscollector.cpp
+        diskstatistics.h diskstatistics.cpp
+        diskstatisticscollector.h diskstatisticscollector.cpp
     QML_FILES
         MyTaskQml/CpuView.qml
         MyTaskQml/CpuBar.qml

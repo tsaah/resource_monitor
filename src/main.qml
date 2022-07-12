@@ -13,7 +13,12 @@ Window {
     title: 'Resource monitor'
     color: Qt.lighter(Material.background)
 
-    Component.onCompleted: ResourceMonitor.intervalMs = 100
+    Component.onCompleted: {
+        Cpu.intervalMs = 100
+        Memory.intervalMs = 100
+        Process.intervalMs = 1000
+        Disks.intervalMs = 100
+    }
 
     Material.theme: Material.Dark
     Material.primary: Qt.darker('#799ad4')

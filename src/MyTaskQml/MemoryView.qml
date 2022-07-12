@@ -13,7 +13,6 @@ Pane {
     Layout.fillHeight: true
 
     readonly property string title: 'Memory usage'
-    readonly property var memory: ResourceMonitor.statistics.memory
 
     ColumnLayout {
         anchors.left:  parent.left
@@ -33,33 +32,33 @@ Pane {
                 Label {
                     Layout.minimumWidth: Common.rightWidth
                     horizontalAlignment: Label.AlignRight
-                    text: Common.stringifyMemory(root.memory.memoryTotal)
+                    text: Common.stringifyMemory(Memory.memoryTotal)
                 }
             }
             MemoryBar {
                 title: 'used'
-                value: root.memory.memoryUsed
-                total: root.memory.memoryTotal
+                value: Memory.memoryUsed
+                total: Memory.memoryTotal
             }
             MemoryBar {
                 title: 'avail'
-                value: root.memory.memoryAvailable
-                total: root.memory.memoryTotal
+                value: Memory.memoryAvailable
+                total: Memory.memoryTotal
             }
             MemoryBar {
                 title: 'cached'
-                value: root.memory.memoryCached
-                total: root.memory.memoryTotal
+                value: Memory.memoryCached
+                total: Memory.memoryTotal
             }
             MemoryBar {
                 title: 'free'
-                value: root.memory.memoryFree
-                total: root.memory.memoryTotal
+                value: Memory.memoryFree
+                total: Memory.memoryTotal
             }
             MemoryBar {
                 title: 'swap'
-                value: root.memory.swapUsed
-                total: root.memory.swapTotal
+                value: Memory.swapUsed
+                total: Memory.swapTotal
             }
         }
     }
